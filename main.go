@@ -139,6 +139,8 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("data >>>> ", data)
+
 	// Extract "sec" and "secval" safely
 	sec, okSec := data["sec"].(string)
 	secval, okSecVal := data["secval"].(string)
