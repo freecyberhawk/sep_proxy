@@ -83,7 +83,7 @@ func verifySignature(publicKey *rsa.PublicKey, data string, signature string) er
 }
 
 func showServerInfo() {
-	banner := figure.NewFigure("Cyber Hawk Proxy", "small", true)
+	banner := figure.NewFigure("Free Cyber Hawk", "small", true)
 
 	c := color.New(color.FgHiCyan).Add(color.Bold)
 	c.Println(banner.String())
