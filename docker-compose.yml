@@ -1,0 +1,9 @@
+services:
+  sep_proxy:
+    container_name: "sep_proxy"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+
