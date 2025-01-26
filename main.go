@@ -146,7 +146,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	secval, okSecVal := data["secval"].(string)
 
 	if !okSec || !okSecVal {
-		http.Error(w, "sec and secval must be strings", http.StatusBadRequest)
+		http.Error(w, "", http.StatusNotFound)
 		return
 	}
 
