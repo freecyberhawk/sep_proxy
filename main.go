@@ -126,7 +126,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	sec := r.URL.Query().Get("sec")
 	secval := r.URL.Query().Get("secval")
 	if sec == "" || secval == "" {
-		http.Error(w, "Missing signature or data", http.StatusBadRequest)
+		http.Error(w, "", http.StatusNotFound)
 		return
 	}
 
