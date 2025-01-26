@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"github.com/common-nighthawk/go-figure"
@@ -123,14 +125,35 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sec := r.URL.Query().Get("sec")
-	secval := r.URL.Query().Get("secval")
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		return
+	}
+	defer r.Body.Close()
+
+	// Parse the JSON into a generic map
+	var data map[string]interface{}
+	if err := json.Unmarshal(body, &data); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Extract "sec" and "secval" safely
+	sec, okSec := data["sec"].(string)
+	secval, okSecVal := data["secval"].(string)
+
+	if !okSec || !okSecVal {
+		http.Error(w, "sec and secval must be strings", http.StatusBadRequest)
+		return
+	}
+
 	if sec == "" || secval == "" {
 		http.Error(w, "", http.StatusNotFound)
 		return
 	}
 
-	// Verify the signature using public key
+	// Verify the signature using the public key
 	err = verifySignature(publicKey, secval, sec)
 	if err != nil {
 		http.Error(w, "Signature verification failed", http.StatusUnauthorized)
@@ -138,8 +161,15 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remove sec and secval from the request data before forwarding
-	r.URL.Query().Del("sec")
-	r.URL.Query().Del("secval")
+	delete(data, "sec")
+	delete(data, "secval")
+
+	// Convert the modified map back to JSON
+	modifiedBody, err := json.Marshal(data)
+	if err != nil {
+		http.Error(w, "Error generating modified body", http.StatusInternalServerError)
+		return
+	}
 
 	// Construct target URL with proper validation
 	targetURL := bankDomain + r.URL.Path
@@ -147,17 +177,17 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 		targetURL += "?" + r.URL.RawQuery
 	}
 
-	// Create new request with context and timeout
+	// Create new request with context and timeout, using modifiedBody
 	ctx, cancel := context.WithTimeout(r.Context(), readTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, r.Method, targetURL, r.Body)
+	req, err := http.NewRequestWithContext(ctx, r.Method, targetURL, bytes.NewReader(modifiedBody))
 	if err != nil {
 		http.Error(w, "Failed to create request", http.StatusInternalServerError)
 		return
 	}
 
-	// Forward headers, except for custom ones
+	// Forward headers (excluding sensitive ones)
 	for name, values := range r.Header {
 		if !strings.HasPrefix(strings.ToLower(name), "x-") {
 			continue // Only allow custom headers
@@ -182,10 +212,10 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	// Send the request to the bank server
+	// Send the request to the target server
 	resp, err := client.Do(req)
 	if err != nil {
-		http.Error(w, "Failed to reach bank server", http.StatusBadGateway)
+		http.Error(w, "Failed to reach target server", http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
@@ -203,26 +233,6 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Response body copy error: %v", err)
 		http.Error(w, "Response transfer failed", http.StatusInternalServerError)
 	}
-}
-
-// Load private key with error handling (for decryption)
-func loadPrivateKey(privKeyPath string) (*rsa.PrivateKey, error) {
-	privKeyBytes, err := os.ReadFile(privKeyPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read private key file: %w", err)
-	}
-
-	block, _ := pem.Decode(privKeyBytes)
-	if block == nil {
-		return nil, fmt.Errorf("invalid PEM block")
-	}
-
-	privKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse private key: %w", err)
-	}
-
-	return privKey, nil
 }
 
 func main() {
