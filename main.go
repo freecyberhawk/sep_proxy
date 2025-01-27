@@ -173,6 +173,8 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("modifiedBody >>>> ", modifiedBody)
+
 	// Construct target URL with proper validation
 	targetURL := bankDomain + r.URL.Path
 	if r.URL.RawQuery != "" {
@@ -183,11 +185,18 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), readTimeout)
 	defer cancel()
 
+	fmt.Println("bytes.NewReader(modifiedBody) >>>> ", bytes.NewReader(modifiedBody))
+	fmt.Println("targetURL >>>> ", targetURL)
+	fmt.Println("r.Method ", r.Method)
+	fmt.Println("ctx ", ctx)
+
 	req, err := http.NewRequestWithContext(ctx, r.Method, targetURL, bytes.NewReader(modifiedBody))
 	if err != nil {
 		http.Error(w, "Failed to create request", http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Println("sent req >>>> ", req)
 
 	// Forward headers (excluding sensitive ones)
 	for name, values := range r.Header {
