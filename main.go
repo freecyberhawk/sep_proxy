@@ -173,8 +173,6 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("modifiedBody >>>> ", modifiedBody)
-
 	// Construct target URL with proper validation
 	targetURL := bankDomain + r.URL.Path
 	if r.URL.RawQuery != "" {
@@ -184,9 +182,6 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	// Create new request with context and timeout, using modifiedBody
 	ctx, cancel := context.WithTimeout(r.Context(), readTimeout)
 	defer cancel()
-
-	fmt.Println("JSON Content:", string(modifiedBody))
-	fmt.Println("bytes.NewReader(modifiedBody) >>>> ", bytes.NewReader(modifiedBody))
 
 	req, err := http.NewRequestWithContext(ctx, r.Method, targetURL, bytes.NewReader(modifiedBody))
 	if err != nil {
