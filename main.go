@@ -185,10 +185,8 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), readTimeout)
 	defer cancel()
 
+	fmt.Println("JSON Content:", string(modifiedBody))
 	fmt.Println("bytes.NewReader(modifiedBody) >>>> ", bytes.NewReader(modifiedBody))
-	fmt.Println("targetURL >>>> ", targetURL)
-	fmt.Println("r.Method ", r.Method)
-	fmt.Println("ctx ", ctx)
 
 	req, err := http.NewRequestWithContext(ctx, r.Method, targetURL, bytes.NewReader(modifiedBody))
 	if err != nil {
@@ -196,7 +194,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("sent req >>>> ", req)
+	req.Header.Set("Content-Type", "application/json")
 
 	// Forward headers (excluding sensitive ones)
 	for name, values := range r.Header {
