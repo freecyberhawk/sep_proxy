@@ -193,13 +193,15 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Forward headers (excluding sensitive ones)
 	for name, values := range r.Header {
-		if !strings.HasPrefix(strings.ToLower(name), "x-") {
+		if strings.HasPrefix(strings.ToLower(name), "x-") {
 			continue // Only allow custom headers
 		}
 		for _, value := range values {
 			req.Header.Add(name, value)
 		}
 	}
+
+	fmt.Println("Request Headers:", req.Header)
 
 	// Configure HTTP client with timeout settings
 	client := &http.Client{
