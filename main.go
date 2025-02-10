@@ -226,22 +226,28 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	body2, _ := io.ReadAll(resp.Body)
+	// Read the response body to log it
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error reading response body: %v", err)
+		http.Error(w, "Failed to read response body", http.StatusInternalServerError)
+		return
+	}
 
 	// Log the response body
-	fmt.Println("res body target >>>> ", string(body2))
+	fmt.Println("Response Body >>>> ", string(responseBody))
 
-	// Forward response headers and body
+	// Forward response headers
 	for name, values := range resp.Header {
 		for _, value := range values {
 			w.Header().Add(name, value)
 		}
 	}
 
+	// Write the response status code and body back to the client
 	w.WriteHeader(resp.StatusCode)
-
-	if _, err = io.Copy(w, resp.Body); err != nil {
-		log.Printf("Response body copy error: %v", err)
+	if _, err := w.Write(responseBody); err != nil {
+		log.Printf("Error writing response body: %v", err)
 		http.Error(w, "Response transfer failed", http.StatusInternalServerError)
 	}
 }
