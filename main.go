@@ -226,7 +226,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	fmt.Println("response_from target >>>> ", resp)
+	fmt.Println("res body target >>>> ", resp.Body)
 
 	// Forward response headers and body
 	for name, values := range resp.Header {
