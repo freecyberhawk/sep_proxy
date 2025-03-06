@@ -146,7 +146,18 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	secval, okSecVal := data["secval"].(string)
 
 	if !okSec || !okSecVal {
-		http.Error(w, "", http.StatusNotFound)
+		response := map[string]interface{}{
+			"version":    "v1.0.0",
+			"powered by": "FreeCyberHawk.",
+		}
+		jsonResponse, err := json.Marshal(response)
+		if err != nil {
+			http.Error(w, "Error generating response", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonResponse)
 		return
 	}
 
