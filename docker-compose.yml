@@ -4,16 +4,5 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    expose:
-      - "8080"
-
-  nginx:
-    container_name: "nginx"
-    image: nginx:latest
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
     ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - sep_proxy
+      - "8000:8080"
